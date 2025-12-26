@@ -1,13 +1,11 @@
 // src/services/wifi-connector.ts
 import { execSync } from "child_process";
 import { WiFiNetwork } from "../types/wifi";
-import { getSavedPassword } from "../utils/password-storage";
 
 export interface ConnectionResult {
   success: boolean;
   message: string;
   requiresPassword?: boolean;
-  usedSavedPassword?: boolean;
 }
 
 /**
@@ -15,48 +13,6 @@ export interface ConnectionResult {
  */
 export function isOpenNetwork(network: WiFiNetwork): boolean {
   return network.security === "Open" || network.security === "OPEN" || network.security === "None";
-}
-
-/**
- * Try to connect to a secured network using saved password
- * @param network - The network to connect to
- * @param wifiInterface - The WiFi interface to use
- * @returns Connection result with usedSavedPassword flag
- */
-export async function tryConnectWithSavedPassword(
-  network: WiFiNetwork,
-  wifiInterface: string,
-): Promise<ConnectionResult> {
-  if (isOpenNetwork(network)) {
-    // Open network - no password needed
-    return connectToNetwork(network, wifiInterface);
-  }
-
-  // Try to get saved password
-  const savedPassword = await getSavedPassword(network.ssid);
-
-  if (savedPassword) {
-    const result = connectToNetwork(network, wifiInterface, savedPassword);
-    if (result.success) {
-      return {
-        ...result,
-        usedSavedPassword: true,
-      };
-    }
-    // If saved password failed, we'll ask user for new password
-    return {
-      success: false,
-      message: "Saved password didn't work",
-      requiresPassword: true,
-    };
-  }
-
-  // No saved password found
-  return {
-    success: false,
-    message: "Password required for this network",
-    requiresPassword: true,
-  };
 }
 
 /**

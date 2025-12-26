@@ -4,7 +4,7 @@ import { WiFiNetwork } from "../types/wifi";
 
 export function scanNetworksAndGetCurrent(): { currentNetwork: string; availableNetworks: WiFiNetwork[] } {
   try {
-    const output = execSync(`/usr/sbin/system_profiler SPAirPortDataType 2>/dev/null`, {
+    const output = execSync(`/usr/sbin/system_profiler SPAirPortDataType`, {
       encoding: "utf-8",
       timeout: 15000,
       maxBuffer: 20 * 1024 * 1024,
@@ -43,7 +43,8 @@ export function scanNetworksAndGetCurrent(): { currentNetwork: string; available
       const line = lines[i];
       const trimmed = line.trim();
 
-      if (trimmed.includes("Other Local Wi-Fi Networks:")) {
+      // Check for both "Local Wi-Fi Networks:" (when disconnected) and "Other Local Wi-Fi Networks:" (when connected)
+      if (trimmed.includes("Local Wi-Fi Networks:")) {
         inNetworkSection = true;
         continue;
       }
@@ -129,6 +130,6 @@ export function scanNetworksAndGetCurrent(): { currentNetwork: string; available
     };
   } catch (error) {
     console.error("System profiler scan failed:", error);
-    return { currentNetwork: "", availableNetworks: [] };
+    throw new Error(`WiFi scan failed: ${String(error)}`);
   }
 }
